@@ -11,8 +11,8 @@
 // Runtime values come from the generated, self-contained bundle (api/_data.js)
 // so the deployed serverless function has NO workspace-path dependency. Types
 // are erased at compile time, so importing them from @demo/data is free.
-// _data.js is generated from packages/data by scripts/gen-api-data.mjs.
-// @ts-expect-error — generated JS, no types; the type-only import below covers it.
+// _data.js is generated from packages/data by scripts/gen-api-data.mjs;
+// _data.d.ts gives it types so this import is fully typed.
 import {
   products as seedProducts,
   categories as seedCategories,
