@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "FreshCart",
+    "slug": "freshcart",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "freshcart",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFFFFF",
+    "primaryColor": "#16A34A",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.freshcart.demo"
+    },
+    "android": {
+      "package": "com.freshcart.demo",
+      "adaptiveIcon": {
+        "backgroundColor": "#16A34A",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "FreshCart — Grocery Delivery"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#16A34A",
+          "android": {
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 100
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false,
+      "reactCompiler": true
+    },
+    "extra": {
+      "apiUrl": "",
+      "eas": {}
+    }
+  }
+}
