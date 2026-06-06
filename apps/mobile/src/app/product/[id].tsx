@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { useState, useRef, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Easing } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
@@ -36,7 +36,31 @@ export default function ProductScreen() {
   const [qty, setLocalQty] = useState(1);
   const [nutritionOpen, setNutritionOpen] = useState(false);
 
+  // Add-to-cart confirmation: a floating card that animates in and auto-dismisses,
+  // plus a brief "Added ✓" state on the button — so the feedback is impossible to miss.
+  const [added, setAdded] = useState<{ qty: number } | null>(null);
+  const [justAdded, setJustAdded] = useState(false);
+  const confAnim = useRef(new Animated.Value(0)).current;
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const twoCol = !layout.isMobile;
+
+  useEffect(() => () => hideTimer.current && clearTimeout(hideTimer.current), []);
+
+  function showConfirmation(addedQty: number) {
+    setAdded({ qty: addedQty });
+    setJustAdded(true);
+    confAnim.stopAnimation();
+    confAnim.setValue(0);
+    Animated.spring(confAnim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 80 }).start();
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => {
+      Animated.timing(confAnim, { toValue: 0, duration: 220, easing: Easing.in(Easing.ease), useNativeDriver: true }).start(
+        () => setAdded(null),
+      );
+      setJustAdded(false);
+    }, 3200);
+  }
 
   if (isLoading || !product) {
     return (
@@ -53,6 +77,7 @@ export default function ProductScreen() {
   function onAdd() {
     if (!isWeb) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     add(product!, qty);
+    showConfirmation(qty);
     setLocalQty(1);
   }
 
@@ -142,9 +167,11 @@ export default function ProductScreen() {
       {twoCol && (
         <View style={styles.desktopCta}>
           <QtyStepper qty={qty} size="lg" onChange={(n) => setLocalQty(Math.max(1, n))} />
-          <Pressable style={styles.addBtn} onPress={onAdd}>
-            <Ionicons name="cart" size={20} color={colors.white} />
-            <Text style={styles.addBtnText}>Add to cart · {formatPrice(product.price * qty)}</Text>
+          <Pressable style={[styles.addBtn, justAdded && styles.addBtnAdded]} onPress={onAdd}>
+            <Ionicons name={justAdded ? "checkmark" : "cart"} size={20} color={colors.white} />
+            <Text style={styles.addBtnText}>
+              {justAdded ? "Added to cart" : `Add to cart · ${formatPrice(product.price * qty)}`}
+            </Text>
           </Pressable>
         </View>
       )}
@@ -173,14 +200,52 @@ export default function ProductScreen() {
         )}
       </ScrollView>
 
+      {/* Floating "Added to cart" confirmation — overlays the screen, no scrolling needed */}
+      {added && (
+        <View
+          style={[styles.confirmHost, layout.isMobile ? styles.confirmHostMobile : styles.confirmHostDesktop]}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[
+              styles.confirmCard,
+              {
+                opacity: confAnim,
+                transform: [
+                  { translateY: confAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
+                  { scale: confAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.confirmCheck}>
+              <Ionicons name="checkmark" size={20} color={colors.white} />
+            </View>
+            <SmartImage source={product} style={styles.confirmThumb} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.confirmTitle}>Added to cart</Text>
+              <Text style={styles.confirmSub} numberOfLines={1}>
+                {added.qty} × {product.name}
+              </Text>
+            </View>
+            <Pressable style={styles.confirmBtn} onPress={() => router.push("/cart")}>
+              <Text style={styles.confirmBtnText}>View cart</Text>
+              <Ionicons name="arrow-forward" size={15} color={colors.white} />
+            </Pressable>
+          </Animated.View>
+        </View>
+      )}
+
       {/* Mobile sticky add-to-cart bar */}
       {layout.isMobile && (
         <SafeAreaView edges={["bottom"]} style={styles.ctaBar}>
           <View style={styles.ctaInner}>
             <QtyStepper qty={qty} size="lg" onChange={(n) => setLocalQty(Math.max(1, n))} />
-            <Pressable style={styles.addBtn} onPress={onAdd}>
-              <Ionicons name="cart" size={20} color={colors.white} />
-              <Text style={styles.addBtnText}>Add · {formatPrice(product.price * qty)}</Text>
+            <Pressable style={[styles.addBtn, justAdded && styles.addBtnAdded]} onPress={onAdd}>
+              <Ionicons name={justAdded ? "checkmark" : "cart"} size={20} color={colors.white} />
+              <Text style={styles.addBtnText}>
+                {justAdded ? "Added" : `Add · ${formatPrice(product.price * qty)}`}
+              </Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -320,5 +385,45 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: radius.full,
   },
+  addBtnAdded: { backgroundColor: colors.primaryDark },
   addBtnText: { color: colors.white, fontWeight: "800", fontSize: fontSize.md },
+
+  // Floating add-to-cart confirmation
+  confirmHost: { position: "absolute", left: 0, right: 0, alignItems: "center", paddingHorizontal: spacing.lg, zIndex: 50 },
+  confirmHostMobile: { bottom: 96 },
+  confirmHostDesktop: { bottom: spacing.xxl },
+  confirmCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    width: "100%",
+    maxWidth: 460,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadow.floating,
+  },
+  confirmCheck: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmThumb: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.surfaceAlt },
+  confirmTitle: { fontSize: fontSize.sm, fontWeight: "900", color: colors.text },
+  confirmSub: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 1, fontWeight: "600" },
+  confirmBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 9,
+    borderRadius: radius.full,
+  },
+  confirmBtnText: { color: colors.white, fontWeight: "800", fontSize: fontSize.sm },
 });
