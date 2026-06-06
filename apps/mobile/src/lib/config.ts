@@ -12,12 +12,19 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-const EXPLICIT =
+const isWeb = Platform.OS === "web";
+
+const RAW =
   process.env.EXPO_PUBLIC_API_URL ||
   ((Constants.expoConfig?.extra as any)?.apiUrl as string | undefined) ||
   "";
 
-const isWeb = Platform.OS === "web";
+// A standalone APK can never reach the dev machine's localhost, but .env sets
+// EXPO_PUBLIC_API_URL=http://localhost:4000 for local web dev and that value is
+// inlined into every build. On native, ignore localhost URLs so the APK falls
+// back to the bundled offline catalog. On web, localhost is valid (dev browser).
+const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(RAW);
+const EXPLICIT = !isWeb && isLocalhost ? "" : RAW;
 
 /** Base to prefix before "/api/...". Empty string = same-origin on web. */
 export const API_BASE = EXPLICIT;
