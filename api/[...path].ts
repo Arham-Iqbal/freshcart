@@ -34,8 +34,18 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // Normalize the path: Vercel gives the segments after /api in req.query.path
-  const segments = ([] as string[]).concat((req.query.path as string[] | string) ?? []);
+  // Normalize the path. Prefer req.url (always the real request path) over
+  // req.query.path, which Vercel doesn't reliably populate for [...path] under
+  // this config. Strip the leading /api and any query string, then derive the
+  // route segments used for dynamic params (/products/:id etc.).
+  let segments: string[];
+  const rawUrl = req.url ?? "";
+  if (rawUrl) {
+    const noQuery = rawUrl.split("?")[0].replace(/^\/api/, "");
+    segments = noQuery.split("/").filter(Boolean);
+  } else {
+    segments = ([] as string[]).concat((req.query.path as string[] | string) ?? []);
+  }
   const path = "/" + segments.join("/");
   const method = req.method ?? "GET";
   const q = req.query as Record<string, string>;
