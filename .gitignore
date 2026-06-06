@@ -1,0 +1,13 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+
+# Local env (keep .env.example if you add one)
+# .env is committed here intentionally for the demo (no secrets)
+
+# EAS
+.easignore
+.gstack/
