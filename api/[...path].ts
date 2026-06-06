@@ -34,17 +34,19 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // Normalize the path. Prefer req.url (always the real request path) over
-  // req.query.path, which Vercel doesn't reliably populate for [...path] under
-  // this config. Strip the leading /api and any query string, then derive the
-  // route segments used for dynamic params (/products/:id etc.).
+  // Normalize the path into route segments (used for dynamic params like
+  // /products/:id). vercel.json rewrites /api/(.*) → /api/[...path]?path=$1, so
+  // the reliable source is req.query.path ("admin/stats"). Fall back to the
+  // [...path] array form, then to parsing req.url. Strip any leading /api.
+  const qp = req.query.path;
   let segments: string[];
-  const rawUrl = req.url ?? "";
-  if (rawUrl) {
-    const noQuery = rawUrl.split("?")[0].replace(/^\/api/, "");
-    segments = noQuery.split("/").filter(Boolean);
+  if (typeof qp === "string") {
+    segments = qp.split("/").filter(Boolean);
+  } else if (Array.isArray(qp) && qp.length) {
+    segments = qp;
   } else {
-    segments = ([] as string[]).concat((req.query.path as string[] | string) ?? []);
+    const noQuery = (req.url ?? "").split("?")[0].replace(/^\/api/, "");
+    segments = noQuery.split("/").filter(Boolean);
   }
   const path = "/" + segments.join("/");
   const method = req.method ?? "GET";
