@@ -24,7 +24,19 @@ calls its own `/api`, so the admin console and live product/order sync work onli
    - API routes + SPA rewrites
 4. Click **Deploy**. You get a URL like `https://freshcart-demo.vercel.app`.
    - Storefront: `/`
-   - Admin console: `/admin`
+   - Admin console: `/admin` (password-protected — see below)
+
+### Set the admin password (important)
+The `/admin` console is gated by a password. Set it in Vercel so it's not the
+default:
+1. Vercel → your project → **Settings → Environment Variables**.
+2. Add: **Name** `EXPO_PUBLIC_ADMIN_PASSWORD`, **Value** = your chosen password,
+   apply to **Production** (and Preview if you want).
+3. **Redeploy** (env vars only take effect on a new build).
+
+If unset, it falls back to `freshcart2025` (the build logs a warning). The
+password is checked client-side — fine for a demo; it keeps casual visitors out.
+Admins enter it once; a "Lock" button in the sidebar signs them out.
 
 ### Option 2 — deploy from your machine (Vercel CLI)
 ```powershell

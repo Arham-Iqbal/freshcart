@@ -180,6 +180,20 @@ app.delete("/api/admin/notifications/:id", (req, res) => {
 // Customer-facing: only notifications whose scheduled time has passed.
 app.get("/api/notifications", (_req, res) => res.json(getDeliveredNotifications()));
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🛒 FreshCart API running at http://localhost:${PORT}`);
+});
+
+// Friendly handling when the port is already taken (a previous instance is still
+// running) — print a clear hint instead of an unhandled crash + stack trace.
+server.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `\n⚠  Port ${PORT} is already in use — the FreshCart API is probably already running.\n` +
+        `   You don't need to start it again. To force a restart, free the port first:\n` +
+        `   PowerShell:  Get-NetTCPConnection -LocalPort ${PORT} -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\n`,
+    );
+    process.exit(0); // clean exit, no scary stack trace
+  }
+  throw err;
 });

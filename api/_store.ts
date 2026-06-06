@@ -8,21 +8,28 @@
  * matches the demo's "reset-on-restart is fine" expectation. The storefront also
  * keeps cart/orders client-side, so the shopping flow never depends on this.
  */
+// Runtime values come from the generated, self-contained bundle (api/_data.js)
+// so the deployed serverless function has NO workspace-path dependency. Types
+// are erased at compile time, so importing them from @demo/data is free.
+// _data.js is generated from packages/data by scripts/gen-api-data.mjs.
+// @ts-expect-error — generated JS, no types; the type-only import below covers it.
 import {
   products as seedProducts,
   categories as seedCategories,
   DELIVERY_FEE,
   TAX_RATE,
   FREE_DELIVERY_THRESHOLD,
-  type CartItem,
-  type Category,
-  type Order,
-  type OrderLine,
-  type OrderStatus,
-  type Product,
-  type PushNotification,
-  type PushAudience,
-  type PushCategory,
+} from "./_data.js";
+import type {
+  CartItem,
+  Category,
+  Order,
+  OrderLine,
+  OrderStatus,
+  Product,
+  PushNotification,
+  PushAudience,
+  PushCategory,
 } from "@demo/data";
 
 const catalog: Product[] = seedProducts.map((p) => ({ ...p }));

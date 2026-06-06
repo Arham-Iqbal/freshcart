@@ -11,6 +11,8 @@
     "postinstall": "node scripts/fix-expo-hoisting.mjs",
     "web": "npm --workspace apps/mobile run web",
     "api": "npm --workspace mock-api run dev",
+    "api:fresh": "node scripts/free-port.mjs 4000 && npm --workspace mock-api run dev",
+    "free-port": "node scripts/free-port.mjs 4000",
     "export:web": "npm --workspace apps/mobile run export:web",
     "vercel-build": "node scripts/vercel-build.mjs"
   },

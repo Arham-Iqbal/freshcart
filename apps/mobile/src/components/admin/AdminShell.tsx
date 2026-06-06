@@ -2,6 +2,8 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter, usePathname } from "expo-router";
 import { colors, spacing, radius, fontSize, shadow, useLayout } from "../../theme";
+import { useAdminAuth } from "../../store/adminAuth";
+import { AdminLogin } from "./AdminLogin";
 
 type NavItem = { label: string; path: string; icon: keyof typeof Ionicons.glyphMap };
 type NavGroup = { group: string; items: NavItem[] };
@@ -52,6 +54,11 @@ export function AdminShell({ title, children }: { title: string; children: React
   const router = useRouter();
   const pathname = usePathname();
   const { isMobile } = useLayout();
+  const unlocked = useAdminAuth((s) => s.unlocked);
+  const lock = useAdminAuth((s) => s.lock);
+
+  // Password gate — every admin page wraps in AdminShell, so this protects all of them.
+  if (!unlocked) return <AdminLogin />;
 
   if (isMobile) {
     return (
@@ -119,10 +126,20 @@ export function AdminShell({ title, children }: { title: string; children: React
           <View style={styles.adminAvatar}>
             <Text style={styles.adminAvatarText}>AS</Text>
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.adminName}>Aarav Sharma</Text>
             <Text style={styles.adminRole}>Store owner</Text>
           </View>
+          <Pressable
+            hitSlop={8}
+            style={styles.lockBtn}
+            onPress={() => {
+              lock();
+              router.replace("/");
+            }}
+          >
+            <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
+          </Pressable>
         </View>
       </View>
 
@@ -222,6 +239,14 @@ const styles = StyleSheet.create({
   adminAvatarText: { color: colors.primary, fontWeight: "900", fontSize: fontSize.sm },
   adminName: { fontSize: fontSize.sm, fontWeight: "800", color: colors.text },
   adminRole: { fontSize: 11, color: colors.textMuted, fontWeight: "600" },
+  lockBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   main: { flex: 1 },
   topbar: {
